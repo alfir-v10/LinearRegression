@@ -71,7 +71,11 @@ def load_model(path):
     return w
 
 
-def train(path):
+
+def train(path, lr=0.01, epochs=5000,
+          path_weight='weights.txt', show_results=False,
+          early_stopping=100.0):
+    print(path, epochs, early_stopping, path_weight, lr, show_results)
     df = pd.read_csv(path)
     x_data = df.iloc[:, 0].values
     y_data = df.iloc[:, 1].values
@@ -83,48 +87,65 @@ def train(path):
     # y = StandartScaler(y_data)
     # y = MinMaxScaler(y_data)
 
-    lr = 0.01
     w = np.zeros(2)
+
 
     mse = []
     mae = []
-    for _ in range(200000):
+    for _ in range(epochs):
         y_pred = predict(w, x)
         w = gradient_descent(y_pred, y_data, x, lr, w)
+        if len(mse) > 10:
+            print(mse[-1], mean_square_error(y_data, y_pred), early_stopping)
+        if len(mse) > 10 and (mse[-1] - mean_square_error(y_data, y_pred)) < early_stopping:
+            print(mse[-1], mean_square_error(y_data, y_pred), early_stopping)
+            break
         mse.append(mean_square_error(y_data, y_pred))
         mae.append(mean_absolute_error(y_data, y_pred))
-    save_model(w, x_data, y_data, 'weights.txt')
 
-    """MSE"""
-    plt.plot(range(len(mse)), mse, color='red')
-    plt.title('MSE by iter')
-    plt.xlabel('iter')
-    plt.ylabel('error')
-    plt.savefig('mse.png')
-    plt.show()
+    save_model(w, x_data, y_data, path_weight)
 
-
-    """MAE"""
-    plt.plot(range(len(mae)), mae, color='green')
-    plt.title('MAE by iter')
-    plt.xlabel('iter')
-    plt.ylabel('error')
-    plt.savefig('mae.png')
-    plt.show()
+    if show_results:
+        """MSE"""
+        plt.plot(range(len(mse)), mse, color='red')
+        plt.title('MSE by epoch')
+        plt.xlabel('epoch')
+        plt.ylabel('error')
+        # plt.savefig('mse.png')
+        plt.show()
 
 
-    """show result of linear regression"""
-    plt.scatter(x_data, y_data, label='real', marker='*', color='green')
-    plt.plot(x_data, y_pred, label='predict')
-    plt.legend()
-    plt.title('Result of linear regression')
-    plt.xlabel('km')
-    plt.ylabel('price')
-    plt.savefig('result.png')
-    plt.show()
+        """MAE"""
+        plt.plot(range(len(mae)), mae, color='green')
+        plt.title('MAE by epoch')
+        plt.xlabel('epoch')
+        plt.ylabel('error')
+        # plt.savefig('mae.png')
+        plt.show()
+
+
+        """show result of linear regression"""
+        plt.scatter(x_data, y_data, label='real', marker='*', color='green')
+        plt.plot(x_data, y_pred, label='predict')
+        plt.legend()
+        plt.title(f'Result of linear regression\n lr={lr}; epochs={epochs}')
+        plt.xlabel('km')
+        plt.ylabel('price')
+        plt.savefig('result.png')
+        plt.show()
 
 
 if __name__ == '__main__':
     pars = argparse.ArgumentParser()
-    pars.add_argument('dataset', help='data.csv')
-    train(pars.parse_args().dataset)
+    pars.add_argument('--i', help='input file', type=str, default='data.csv')
+    pars.add_argument('--lr', help='learning rate', type=float, default=0.01)
+    pars.add_argument('--e', help='epochs', type=int, default=5000)
+    pars.add_argument('--o', help='output file', type=str, default='weights.txt')
+    pars.add_argument('--p', help='plot results', type=bool, default=False)
+    pars.add_argument('--es', help='early_stopping', type=float, default=100.0)
+    train(path=pars.parse_args().i,
+          lr=pars.parse_args().lr,
+          epochs=pars.parse_args().e,
+          early_stopping=pars.parse_args().es,
+          path_weight=pars.parse_args().o,
+          show_results=pars.parse_args().p)
