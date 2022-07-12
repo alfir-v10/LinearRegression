@@ -71,34 +71,27 @@ def load_model(path):
     return w
 
 
-
 def train(path, lr=0.01, epochs=5000,
           path_weight='weights.txt', show_results=False,
           early_stopping=100.0):
-    print(path, epochs, early_stopping, path_weight, lr, show_results)
+    print(f" path: {path}\n epochs: {epochs}\n "
+          f"early_stopping: {early_stopping}\n path_weight: {path_weight}\n "
+          f"lr: {lr} \n show_results: {show_results}")
     df = pd.read_csv(path)
     x_data = df.iloc[:, 0].values
     y_data = df.iloc[:, 1].values
-    # plot(x_data, y_data)
 
-    # x = StandartScaler(x_data)
     x = MinMaxScaler(x_data)
-
-    # y = StandartScaler(y_data)
-    # y = MinMaxScaler(y_data)
-
     w = np.zeros(2)
-
 
     mse = []
     mae = []
-    for _ in range(epochs):
+    for i in range(epochs):
         y_pred = predict(w, x)
         w = gradient_descent(y_pred, y_data, x, lr, w)
-        if len(mse) > 10:
-            print(mse[-1], mean_square_error(y_data, y_pred), early_stopping)
         if len(mse) > 10 and (mse[-1] - mean_square_error(y_data, y_pred)) < early_stopping:
-            print(mse[-1], mean_square_error(y_data, y_pred), early_stopping)
+            # print(mse[-1], mean_square_error(y_data, y_pred), early_stopping)
+            epochs = i
             break
         mse.append(mean_square_error(y_data, y_pred))
         mae.append(mean_absolute_error(y_data, y_pred))
@@ -111,24 +104,23 @@ def train(path, lr=0.01, epochs=5000,
         plt.title('MSE by epoch')
         plt.xlabel('epoch')
         plt.ylabel('error')
-        # plt.savefig('mse.png')
+        plt.savefig('mse.png')
         plt.show()
-
 
         """MAE"""
         plt.plot(range(len(mae)), mae, color='green')
         plt.title('MAE by epoch')
         plt.xlabel('epoch')
         plt.ylabel('error')
-        # plt.savefig('mae.png')
+        plt.savefig('mae.png')
         plt.show()
-
 
         """show result of linear regression"""
         plt.scatter(x_data, y_data, label='real', marker='*', color='green')
         plt.plot(x_data, y_pred, label='predict')
         plt.legend()
-        plt.title(f'Result of linear regression\n lr={lr}; epochs={epochs}')
+        plt.title(
+            f'Result of linear regression\n lr={lr}; epochs={epochs}\n mse={round(mse[-1], 2)} mae={round(mae[-1], 2)}')
         plt.xlabel('km')
         plt.ylabel('price')
         plt.savefig('result.png')
